@@ -22,7 +22,8 @@ jobs:
       - name: Compilar (onedir)
         run: >
           pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
-          --collect-all demucs --collect-all whisper app.py
+          --collect-all demucs --collect-all whisper --add-data "img;img"
+          app.py
       - name: Instalador (Inno Setup)
         shell: pwsh
         run: |
@@ -56,7 +57,8 @@ jobs:
       - name: Compilar .app
         run: >
           pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
-          --collect-all demucs --collect-all whisper app.py
+          --collect-all demucs --collect-all whisper --add-data "img:img"
+          app.py
       - name: Gerar .dmg
         run: |
           hdiutil create -volname "Estudio do Cantor" -srcfolder dist/EstudioDoCantor.app \
@@ -82,7 +84,8 @@ jobs:
       - name: Compilar (onedir)
         run: >
           pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
-          --collect-all demucs --collect-all whisper app.py
+          --collect-all demucs --collect-all whisper --add-data "img:img"
+          app.py
       - name: Portátil (tar.gz)
         run: tar -czf EstudioDoCantor-Portable-Linux.tar.gz -C dist EstudioDoCantor
       - name: Pacote .deb

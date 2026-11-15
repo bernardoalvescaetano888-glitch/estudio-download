@@ -9,13 +9,16 @@ lic_core.py — Sistema de licenças do Estúdio do Cantor
     3 = ULTRA (R$ 140/mês) -> + postagem direta no YouTube
 """
 import os
+import sys
 import json
-import time
 import hmac
 import hashlib
+import time
 from datetime import datetime, timedelta
 
 SECRET = b"EDC-2026-ESTUDIO-DO-CANTOR-SECRET-v1-TROQUE-ESTA-CHAVE"
+# Fase atual: 90 dias de teste completo. Depois, sistema da HONESTIDADE:
+# a aba 💚 Pagamentos ativa o plano pela boa-fé do usuário (sem verificação).
 TRIAL_DAYS = 90
 RESTRICT_MAX_SECONDS = 60
 
@@ -37,7 +40,49 @@ def _path():
 def init():
     """Cria o registro do teste na primeira execução."""
     if not os.path.exists(_path()):
-        save({"created": time.time(), "key": None})
+        save({"created": time.time(), "key": None, "last_honor_month": None})
+
+
+def set_honor_plan(tier: int, days: int = 31):
+    """Sistema da honestidade: usuário DECLARA que pagou o plano do mês.
+    Ativa localmente o tier escolhido por 31 dias. Sem verificação — a
+    fiscalização é a consciência (e o céu, segundo o dono do projeto 😄)."""
+    d = load()
+    d["honor"] = {
+        "tier": tier,
+        "expira": (datetime.now() + timedelta(days=days)).strftime("%Y%m%d"),
+        "mes": datetime.now().strftime("%Y-%m"),
+    }
+    d.setdefault("honor_log", []).append({
+        "plano": TIER_NAMES.get(tier, "?"), "quando": datetime.now().strftime("%Y-%m-%d %H:%M")})
+    save(d)
+
+
+def honor_active():
+    """Retorna o tier ativo por honra, ou None se expirou/nao declarou."""
+    h = load().get("honor")
+    if not h:
+        return None
+    try:
+        if datetime.strptime(h["expira"], "%Y%m%d") >= datetime.now():
+            return h.get("tier", 0) or None
+    except Exception:
+        pass
+    return None
+
+
+def mark_reminded(month: str):
+    d = load()
+    d["last_reminder_month"] = month
+    save(d)
+
+
+def reminder_done(month: str) -> bool:
+    return load().get("last_reminder_month") == month
+
+
+def honor_month_done(month: str) -> bool:
+    return load().get("last_honor_month") == month
 
 
 def load():
@@ -120,13 +165,20 @@ def status():
             "label": "LICENÇA EXPIRADA",
             "detail": "Sua licença venceu. Renove para liberar tudo.",
         }
+    ht = honor_active()
+    if ht:
+        return {
+            "mode": "honor", "tier": ht, "full": True, "max_seconds": None,
+            "label": f"{TIER_NAMES[ht]} por HONESTIDADE 💚",
+            "detail": "Obrigado pela honestidade! Renove todo mês na aba 💚 Pagamentos.",
+        }
     created = d.get("created", time.time())
     days_left = TRIAL_DAYS - int((time.time() - created) / 86400)
     if days_left > 0:
         return {
             "mode": "trial", "tier": 3, "full": True, "max_seconds": None,
             "label": f"TESTE GRATUITO — {days_left} dia(s) restante(s)",
-            "detail": "Após o teste, ative uma licença para continuar com tudo.",
+            "detail": "Após o teste, escolha seu plano na aba 💚 Pagamentos.",
         }
     return {
         "mode": "restricted", "tier": 0, "full": False,

@@ -35,6 +35,25 @@ VERSION = "1.0.0"
 APP_NAME = "Estúdio do Cantor"
 STORE_URL = "https://SEU-SERVIDOR.onrender.com/plans"  # <- troque pela URL do seu servidor MP (rota /plans)
 
+# QRs do sistema da honestidade (imagens do Mercado Pago do vendedor)
+import datetime as _dt
+
+HONOR_PLANS = {
+    "PLUS — R$ 70/mês":  ("img/pix_plus_70.png",   70),
+    "MAX — R$ 100/mês":  ("img/pix_max_100.png",  100),
+    "ULTRA — R$ 140/mês": ("img/pix_ultra_140.png", 140),
+}
+
+
+def resource_path(rel: str) -> str:
+    """Funciona no código-fonte e dentro do executável PyInstaller."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel)
+
+
+def month_now() -> str:
+    return _dt.date.today().strftime("%Y-%m")
+
 C = {
     "bg":     "#0f1117",
     "panel":  "#161a24",
@@ -80,6 +99,8 @@ class App(tk.Tk):
         self._build_statusbar()
         self.show_tab("sep")
         self.after(200, self.refresh_license_ui)
+        self.after(2500, self.check_honor)
+        self.after(300, lambda: self.refresh_license_ui(pay=True))
 
     # ------------------------------------------------------------ UI base
     def _build_header(self):
@@ -94,8 +115,9 @@ class App(tk.Tk):
                   bg=C["panel2"], fg=C["text"], relief="flat",
                   activebackground=C["accent"], font=("Segoe UI", 9, "bold")
                   ).pack(side="right", padx=6)
-        tk.Button(h, text="🛒 Comprar plano", command=lambda: self._open_url(STORE_URL),
-                  bg=C["panel2"], fg=C["text"], relief="flat", font=("Segoe UI", 9, "bold")
+        tk.Button(h, text="💚 Plano do mês", command=lambda: self.show_tab("pay"),
+                  bg=C["panel2"], fg=C["text"], relief="flat",
+                  activebackground=C["accent"], font=("Segoe UI", 9, "bold")
                   ).pack(side="right", padx=6)
 
     def _build_banner(self):
@@ -108,7 +130,7 @@ class App(tk.Tk):
         self.tab_buttons = {}
         self.tab_frames = {}
         for key, label in (("sep", "🎤 Separar voz"), ("tom", "🎹 Mudar tom"),
-                           ("srt", "📝 Legendas")):
+                           ("srt", "📝 Legendas"), ("pay", "💚 Pagamentos")):
             b = tk.Button(bar, text=label, font=("Segoe UI", 11, "bold"),
                           relief="flat", bd=0, padx=18, pady=8,
                           command=lambda k=key: self.show_tab(k))
@@ -119,6 +141,7 @@ class App(tk.Tk):
         self.tab_frames["sep"] = self._build_separar(self.container)
         self.tab_frames["tom"] = self._build_tom(self.container)
         self.tab_frames["srt"] = self._build_legendas(self.container)
+        self.tab_frames["pay"] = self._build_pagamentos(self.container)
 
     def show_tab(self, key):
         for k, f in self.tab_frames.items():
@@ -295,16 +318,111 @@ class App(tk.Tk):
         return None
 
     # ------------------------------------------------------------ licenças
-    def refresh_license_ui(self):
+    # ------------------------------------------------------------ tab: pagamentos
+    def _build_pagamentos(self, parent):
+        f = self._mk_panel(parent)
+        tk.Label(f, text="💚 SISTEMA DA HONESTIDADE", font=("Segoe UI", 13, "bold"),
+                 bg=C["panel"], fg=C["accent"]).pack(anchor="w", pady=(0, 4))
+        tk.Label(f, text="Este app confia em você: escolha o plano do mês, pague o QR e\n"
+                         "ative. Quem não puder, segue no plano limitado — sem bloqueio, sem briga.",
+                 bg=C["panel"], fg=C["muted"], justify="left", font=("Segoe UI", 9)
+                 ).pack(anchor="w", pady=(0, 8))
+
+        self.pay_status = tk.Label(f, text="", bg=C["panel"], fg=C["text"],
+                                   font=("Segoe UI", 10, "bold"), justify="left",
+                                   wraplength=640)
+        self.pay_status.pack(anchor="w", pady=(0, 10))
+
+        row_p = tk.Frame(f, bg=C["panel"]); row_p.pack(fill="x", pady=4)
+        tk.Label(row_p, text="Plano do mês:", width=22, anchor="w", bg=C["panel"],
+                 fg=C["muted"]).pack(side="left")
+        self.pay_tier = tk.IntVar(value=1)
+        for t, nome in ((1, "PLUS R$70"), (2, "MAX R$100"), (3, "ULTRA R$140")):
+            tk.Radiobutton(row_p, text=nome, variable=self.pay_tier, value=t,
+                           bg=C["panel"], fg=C["text"], selectcolor=C["entry"],
+                           activebackground=C["panel"],
+                           command=self._update_qr).pack(side="left", padx=6)
+
+        self.qr_area = tk.Label(f, bg=C["panel"], fg=C["muted"])
+        self.qr_area.pack(anchor="w", pady=8)
+
+        row_b = tk.Frame(f, bg=C["panel"]); row_b.pack(fill="x", pady=8)
+        self._mk_btn(row_b, "✅ JÁ PAGUEI — ativar este plano", self.honor_activate,
+                     C["accent"]).pack(side="left", padx=3)
+        self._mk_btn(row_b, "Continuar sem pagar (plano limitado)", self.honor_continue,
+                     C["panel2"], C["text"]).pack(side="left", padx=3)
+        self._update_qr()
+        return f
+
+    def _update_qr(self):
+        try:
+            nome, cam = list(HONOR_PLANS.items())[self.pay_tier.get() - 1]
+            path = resource_path(cam)
+            if os.path.exists(path):
+                try:
+                    from PIL import Image, ImageTk
+                    img = Image.open(path)
+                    w = 220
+                    h = int(img.height * w / img.width)
+                    self._qr_photo = ImageTk.PhotoImage(img.resize((w, h)))
+                    self.qr_area.configure(image=self._qr_photo, text="", bg=C["panel"])
+                except Exception:
+                    self.qr_area.configure(text=f"QR: {os.path.basename(path)}",
+                                           image="", bg=C["panel"])
+            self.pay_plan_lbl = nome
+        except Exception:
+            pass
+        self.refresh_license_ui(pay=True)
+
+    def honor_activate(self):
+        tier = self.pay_tier.get()
+        lic.set_honor_plan(tier)
+        messagebox.showinfo(
+            "💚 Obrigado!",
+            f"Plano {lic.TIER_NAMES[tier]} ativado por HONESTIDADE por 31 dias.\n\n"
+            "Você disse que pagou — e aqui a gente acredita em você.\n"
+            "Renove todo mês nesta aba. 😉")
+        self.refresh_license_ui(pay=True)
+
+    def honor_continue(self):
+        messagebox.showinfo(
+            "Sem problema!",
+            "Você segue no plano limitado (áudio de 60s).\n"
+            "A aba 💚 Pagamentos fica aqui quando quiser — e ninguém vai cobrar nada.")
+
+    # ------------------------------------------------------------ lembrete mensal
+    def check_honor(self):
+        s = lic.status()
+        if s["mode"] in ("licensed", "honor", "trial"):
+            return
+        m = month_now()
+        if lic.reminder_done(m):
+            return
+        lic.mark_reminded(m)
+        self.show_tab("pay")
+
+    def refresh_license_ui(self, pay=False):
         s = lic.status()
         self.lbl_lic.configure(text=f"  {s['label']}  ", fg={
-            "trial": C["accent"], "licensed": C["accent2"], "restricted": C["danger"],
+            "trial": C["accent"], "licensed": C["accent2"], "honor": C["accent"],
+            "restricted": C["danger"],
         }[s["mode"]])
         if s["mode"] == "restricted":
-            self.banner.configure(text=f"⚠ {s['detail']}  →  ⭐ Ativar licença ou 🛒 Comprar plano")
+            self.banner.configure(
+                text=f"⚠ {s['detail']}  →  escolha seu plano na aba 💚 Pagamentos")
             self.banner.pack(fill="x")
         else:
             self.banner.pack_forget()
+        if pay and hasattr(self, "pay_status"):
+            m = {"trial": f"✅ Você está no TESTE GRATUITO ({s['label'].split('— ')[-1]}). "
+                          "Aqui você já pode escolher como apoiar o projeto.",
+                 "licensed": f"⭐ {s['detail']} — chaves oficiais não precisam de renovação por honra.",
+                 "honor": f"💚 {s['detail']}",
+                 "restricted": "⚠ Plano limitado: áudio de 60s. Escolha um plano ao lado, "
+                               "pague o QR e clique em 'JÁ PAGUEI'."}[s["mode"]]
+            self.pay_status.configure(text=m, fg={
+                "trial": C["accent"], "licensed": C["accent2"],
+                "honor": C["accent"], "restricted": C["warn"]}[s["mode"]])
 
     def show_activate_dialog(self):
         d = tk.Toplevel(self); d.title("Ativar licença")
