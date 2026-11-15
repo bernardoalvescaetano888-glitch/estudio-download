@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lic_core as lic
 
 VERSION = "1.0.0"
+APP_NAME = "Estúdio do Cantor"
 STORE_URL = "https://SEU-SERVIDOR.onrender.com/plans"  # <- troque pela URL do seu servidor MP (rota /plans)
 
 C = {
