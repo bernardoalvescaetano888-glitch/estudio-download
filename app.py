@@ -133,15 +133,21 @@ class App(tk.Tk):
                                bg=C["panel"], fg=C["muted"], padx=12)
         self.status.pack(fill="x", side="bottom")
 
-    def _mk_field(self, parent, label):
+    def _mk_field(self, parent, label, browse=None, icon="📂"):
         row = tk.Frame(parent, bg=C["panel"])
         row.pack(fill="x", pady=4)
         tk.Label(row, text=label, width=22, anchor="w", bg=C["panel"],
                  fg=C["muted"], font=("Segoe UI", 9)).pack(side="left")
-        var = tk.StringVar()
-        e = tk.Entry(row, textvariable=var, bg=C["entry"], fg=C["text"],
-                     insertbackground=C["text"], relief="flat")
+        e = tk.Entry(row, bg=C["entry"], fg=C["text"], relief="flat")
         e.pack(side="left", fill="x", expand=True, ipady=4, padx=(0, 6))
+        if browse:
+            tk.Button(row, text=icon, command=browse, bg=C["accent"], fg="#10131b",
+                      relief="flat", bd=0, width=3, cursor="hand2",
+                      font=("Segoe UI", 12, "bold"),
+                      activebackground=C["accent"],
+                      activeforeground="#10131b").pack(side="right", padx=2)
+        var = tk.StringVar()
+        e.configure(textvariable=var)
         return row, var
 
     def _mk_btn(self, parent, text, cmd, color, fg="#10131b"):
@@ -165,8 +171,10 @@ class App(tk.Tk):
         tk.Label(f, text="🎤 SEPARAR VOZ × INSTRUMENTAL", font=("Segoe UI", 13, "bold"),
                  bg=C["panel"], fg=C["text"]).pack(anchor="w", pady=(0, 8))
 
-        _, self.sep_file = self._mk_field(f, "Música (MP3/WAV/FLAC):")
-        _, self.sep_dir = self._mk_field(f, "Pasta de saída:")
+        _, self.sep_file = self._mk_field(f, "Música (MP3/WAV/FLAC):",
+            browse=lambda: self.pick_music(self.sep_file))
+        _, self.sep_dir = self._mk_field(f, "Pasta de saída:",
+            browse=lambda: self.pick_dir(self.sep_dir), icon="📁")
         row_m = tk.Frame(f, bg=C["panel"]); row_m.pack(fill="x", pady=4)
         tk.Label(row_m, text="Modelo de IA:", width=22, anchor="w", bg=C["panel"],
                  fg=C["muted"]).pack(side="left")
@@ -201,8 +209,10 @@ class App(tk.Tk):
         tk.Label(f, text="🎹 MUDAR O TOM (mantém a velocidade)", font=("Segoe UI", 13, "bold"),
                  bg=C["panel"], fg=C["text"]).pack(anchor="w", pady=(0, 8))
 
-        _, self.tom_file = self._mk_field(f, "Música (MP3/WAV/FLAC):")
-        _, self.tom_dir = self._mk_field(f, "Pasta de saída:")
+        _, self.tom_file = self._mk_field(f, "Música (MP3/WAV/FLAC):",
+            browse=lambda: self.pick_music(self.tom_file))
+        _, self.tom_dir = self._mk_field(f, "Pasta de saída:",
+            browse=lambda: self.pick_dir(self.tom_dir), icon="📁")
 
         row_s = tk.Frame(f, bg=C["panel"]); row_s.pack(fill="x", pady=8)
         tk.Label(row_s, text="Semitons:", width=22, anchor="w", bg=C["panel"],
@@ -251,7 +261,8 @@ class App(tk.Tk):
         tk.Label(f, text="📝 GERAR LEGENDAS + TRANSCRIÇÃO (IA local)", font=("Segoe UI", 13, "bold"),
                  bg=C["panel"], fg=C["text"]).pack(anchor="w", pady=(0, 8))
 
-        _, self.srt_file = self._mk_field(f, "Áudio ou vídeo (MP3/WAV/MP4):")
+        _, self.srt_file = self._mk_field(f, "Áudio ou vídeo (MP3/WAV/MP4):",
+            browse=lambda: self.pick_media(self.srt_file))
         row_m = tk.Frame(f, bg=C["panel"]); row_m.pack(fill="x", pady=4)
         tk.Label(row_m, text="Modelo:", width=22, anchor="w", bg=C["panel"],
                  fg=C["muted"]).pack(side="left")
@@ -395,6 +406,18 @@ class App(tk.Tk):
         tmp = os.path.join(tempfile.gettempdir(), f"edc_{int(time.time()*1000)}.wav")
         sf.write(tmp, y.T, sr)
         return tmp
+
+    def pick_media(self, var):
+        p = filedialog.askopenfilename(filetypes=[
+            ("Áudio ou vídeo", "*.mp3 *.wav *.flac *.ogg *.m4a *.mp4 *.mkv *.mov *.webm"),
+            ("Todos", "*.*")])
+        if p:
+            var.set(p)
+
+    def pick_dir(self, var):
+        d = filedialog.askdirectory()
+        if d:
+            var.set(d)
 
     def default_outdir(self, src, sub):
         base = os.path.dirname(src) or os.path.expanduser("~")
