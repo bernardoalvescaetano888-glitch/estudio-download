@@ -1,0 +1,110 @@
+name: Instaladores (Windows / macOS / Linux) + Portáteis
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.10"}
+      - name: Dependências
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pyinstaller
+      - name: Compilar (onedir)
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
+          --collect-all demucs --collect-all whisper app.py
+      - name: Instalador (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+      - name: Portátil (zip)
+        shell: pwsh
+        run: Compress-Archive -Path dist\EstudioDoCantor -DestinationPath EstudioDoCantor-Portable-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with: {name: windows, path: "output/EstudioDoCantor-Setup.exe"}
+      - uses: actions/upload-artifact@v4
+        with: {name: windows-portable, path: EstudioDoCantor-Portable-Windows.zip}
+      - name: Publicar na Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            output/EstudioDoCantor-Setup.exe
+            EstudioDoCantor-Portable-Windows.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.10"}
+      - name: Dependências
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pyinstaller
+      - name: Compilar .app
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
+          --collect-all demucs --collect-all whisper app.py
+      - name: Gerar .dmg
+        run: |
+          hdiutil create -volname "Estudio do Cantor" -srcfolder dist/EstudioDoCantor.app \
+            -ov -format UDZO EstudioDoCantor.dmg
+      - uses: actions/upload-artifact@v4
+        with: {name: macos, path: EstudioDoCantor.dmg}
+      - name: Publicar na Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: EstudioDoCantor.dmg
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.10"}
+      - name: Dependências
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pyinstaller
+      - name: Compilar (onedir)
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name EstudioDoCantor
+          --collect-all demucs --collect-all whisper app.py
+      - name: Portátil (tar.gz)
+        run: tar -czf EstudioDoCantor-Portable-Linux.tar.gz -C dist EstudioDoCantor
+      - name: Pacote .deb
+        run: |
+          mkdir -p pkg/DEBIAN pkg/opt/estudiodocantor pkg/usr/local/bin
+          cp -r dist/EstudioDoCantor/* pkg/opt/estudiodocantor/
+          printf '%s\n' "Package: estudiodocantor" "Version: 1.0.0" "Section: sound" \
+            "Priority: optional" "Architecture: amd64" "Depends: ffmpeg" \
+            "Maintainer: Estudio do Cantor <contato@estudiodocantor.app>" \
+            "Description: Estudio do Cantor - separa voz, muda tom e gera legendas (IA local)" \
+            > pkg/DEBIAN/control
+          printf '#!/bin/sh\nexec /opt/estudiodocantor/EstudioDoCantor "$@"\n' > pkg/usr/local/bin/estudiodocantor
+          chmod +x pkg/usr/local/bin/estudiodocantor
+          dpkg-deb --root-owner-group --build pkg estudiodocantor.deb
+      - uses: actions/upload-artifact@v4
+        with: {name: linux, path: estudiodocantor.deb}
+      - uses: actions/upload-artifact@v4
+        with: {name: linux-portable, path: EstudioDoCantor-Portable-Linux.tar.gz}
+      - name: Publicar na Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            estudiodocantor.deb
+            EstudioDoCantor-Portable-Linux.tar.gz

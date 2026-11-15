@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/
+dist/
+output/
+*.spec
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+license.json
+server/

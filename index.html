@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download — Estúdio do Cantor</title>
+<style>
+ :root{--bg:#0f1117;--panel:#161a24;--panel2:#1c2130;--text:#e8eaf0;
+       --muted:#8a93a5;--accent:#3ddc97;--accent2:#5aa7ff;--warn:#ffb454;--danger:#ff5f7e}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--text);
+      font-family:system-ui,'Segoe UI',sans-serif;text-align:center}
+ header{padding:56px 20px 20px}
+ h1{font-size:2.4em;margin:.2em}
+ h1 .k{color:var(--accent)}
+ .sub{color:var(--muted);font-size:1.05em;max-width:620px;margin:8px auto 0}
+ .grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;padding:28px 16px}
+ .card{background:var(--panel);border:1px solid #262c3c;border-radius:16px;
+       padding:24px;width:280px;text-align:center}
+ .card .os{font-size:2.2em}
+ .card h2{font-size:1.15em;margin:.4em 0 .2em}
+ .card p{color:var(--muted);font-size:.85em;min-height:38px}
+ a.btn{display:inline-block;margin-top:10px;padding:11px 22px;border-radius:12px;
+       text-decoration:none;font-weight:700;color:#10131b;background:var(--accent)}
+ a.btn.ghost{background:var(--panel2);color:var(--text)}
+ a.btn:hover{filter:brightness(1.1)}
+ .plans{background:var(--panel);border:1px solid #262c3c;border-radius:16px;
+        margin:18px auto;max-width:760px;padding:26px}
+ .plans table{width:100%;border-collapse:collapse;margin-top:10px}
+ .plans td{padding:10px;border-top:1px solid #262c3c}
+ .tag{color:var(--accent);font-weight:700}
+ .warn{color:var(--warn);font-size:.9em;max-width:640px;margin:0 auto 40px}
+ footer{color:var(--muted);font-size:.8em;padding:26px}
+</style>
+</head>
+<body>
+<header>
+ <h1>🎛 Estúdio do <span class="k">Cantor</span></h1>
+ <p class="sub">Separe voz × instrumental com IA, mude o tom e gere legendas —
+ tudo local no seu PC, sem enviar nada pra nuvem.</p>
+</header>
+
+<div class="grid">
+ <div class="card"><div class="os">🪟</div><h2>Windows</h2>
+  <p>Instalador completo (recomendado) — cria atalho no desktop</p>
+  <a class="btn" href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/releases/latest/download/EstudioDoCantor-Setup.exe">⬇ Instalador .exe</a><br>
+  <a class="btn ghost" href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/releases/latest/download/EstudioDoCantor-Portable-Windows.zip">🧳 Portátil .zip</a>
+ </div>
+ <div class="card"><div class="os">🍎</div><h2>macOS</h2>
+  <p>Imagem de disco — arraste para Aplicativos</p>
+  <a class="btn" href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/releases/latest/download/EstudioDoCantor.dmg">⬇ .dmg</a>
+ </div>
+ <div class="card"><div class="os">🐧</div><h2>Linux</h2>
+  <p>Pacote .deb (Debian/Ubuntu/Mint) ou portátil</p>
+  <a class="btn" href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/releases/latest/download/estudiodocantor.deb">⬇ .deb</a><br>
+  <a class="btn ghost" href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/releases/latest/download/EstudioDoCantor-Portable-Linux.tar.gz">🧳 Portátil .tar.gz</a>
+ </div>
+</div>
+
+<div class="plans">
+ <h2>💾 Planos da licença</h2>
+ <table>
+  <tr><td><span class="tag">TESTE</span></td><td>R$ 0 — 90 dias, tudo liberado</td></tr>
+  <tr><td><span class="tag">PLUS</span></td><td>R$ 70/mês — sem limites</td></tr>
+  <tr><td><span class="tag">MAX</span></td><td>R$ 100/mês — + exportar MP3/MP4</td></tr>
+  <tr><td><span class="tag">ULTRA</span></td><td>R$ 140/mês — + postar no YouTube</td></tr>
+ </table>
+ <p style="color:var(--muted);font-size:.9em">Após instalar, o app já inicia o teste gratuito de 90 dias.</p>
+</div>
+
+<p class="warn">⚠ O app usa <b>FFmpeg</b> para abrir MP3/vídeo: instale com
+<code>winget install ffmpeg</code> (Windows), <code>brew install ffmpeg</code> (Mac)
+ou <code>sudo apt install ffmpeg</code> (Linux). A primeira análise pode demorar mais
+(modelos de IA baixam uma vez e ficam salvos).</p>
+
+<footer>Estúdio do Cantor — código fonte incluído no repositório · 
+<a href="https://github.com/bernardoalvescaetano888-glitch/estudio-download/archive/refs/heads/main.zip" style="color:var(--accent2)">baixar fonte .zip</a></footer>
+</body>
+</html>
